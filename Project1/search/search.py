@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -87,17 +87,128 @@ def depthFirstSearch(problem):
     print "Start's successors:", problem.getSuccessors(problem.getStartState())
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    maxTripCount = 10000
+
+    startState = problem.getStartState()
+
+    closed = set()
+    fringe = util.Stack()
+
+    startNode = [startState]
+    startActions = []
+    startCost = 0
+    fringe.push((startNode, startActions, startCost))
+
+    while not fringe.isEmpty() and maxTripCount > 0:
+        maxTripCount -= 1
+
+        triple = fringe.pop()
+        node, actions, cost = triple
+        nodeState = node[-1]
+
+        if problem.isGoalState(nodeState):
+            return actions
+
+        if nodeState not in closed:
+            closed.add(nodeState)
+            for childTriple in problem.getSuccessors(nodeState):
+                childState, childAction, childCost = childTriple
+
+                childNode = list(node)
+                childNode.append(childState)
+
+                childActions = list(actions)
+                childActions.append(childAction)
+
+                childCost = cost + childCost
+
+                fringe.push((childNode, childActions, childCost))
+
+    return None # failure
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    maxTripCount = 10000
+
+    startState = problem.getStartState()
+
+    closed = set()
+    fringe = util.Queue()
+
+    startNode = [startState]
+    startActions = []
+    startCost = 0
+    fringe.push((startNode, startActions, startCost))
+
+    while not fringe.isEmpty() and maxTripCount > 0:
+        maxTripCount -= 1
+
+        triple = fringe.pop()
+        node, actions, cost = triple
+        nodeState = node[-1]
+
+        if problem.isGoalState(nodeState):
+            return actions
+
+        if nodeState not in closed:
+            closed.add(nodeState)
+            for childTriple in problem.getSuccessors(nodeState):
+                childState, childAction, childCost = childTriple
+
+                childNode = list(node)
+                childNode.append(childState)
+
+                childActions = list(actions)
+                childActions.append(childAction)
+
+                childCost = cost + childCost
+
+                fringe.push((childNode, childActions, childCost))
+
+    return None # failure
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    maxTripCount = 10000
+
+    startState = problem.getStartState()
+
+    closed = set()
+    fringe = util.PriorityQueue()
+
+    startNode = [startState]
+    startActions = []
+    startCost = 0
+    fringe.push((startNode, startActions, startCost), startCost)
+
+    while not fringe.isEmpty() and maxTripCount > 0:
+        maxTripCount -= 1
+
+        triple = fringe.pop()
+        node, actions, cost = triple
+        nodeState = node[-1]
+
+        if problem.isGoalState(nodeState):
+            return actions
+
+        if nodeState not in closed:
+            closed.add(nodeState)
+            for childTriple in problem.getSuccessors(nodeState):
+                childState, childAction, childCost = childTriple
+
+                childNode = list(node)
+                childNode.append(childState)
+
+                childActions = list(actions)
+                childActions.append(childAction)
+
+                childCost = cost + childCost
+
+                fringe.push((childNode, childActions, childCost), childCost)
+
+    return None # failure
 
 def nullHeuristic(state, problem=None):
     """
