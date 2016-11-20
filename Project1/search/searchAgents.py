@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -295,14 +295,14 @@ class CornersProblem(search.SearchProblem):
         space)
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return (self.startingPosition, (False, False, False, False))
 
     def isGoalState(self, state):
         """
         Returns whether this search state is a goal state of the problem.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return all([corner is True for corner in state[1]])
 
     def getSuccessors(self, state):
         """
@@ -325,6 +325,21 @@ class CornersProblem(search.SearchProblem):
             #   hitsWall = self.walls[nextx][nexty]
 
             "*** YOUR CODE HERE ***"
+            x, y = state[0]
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            nextPos = (nextx, nexty)
+
+            hitsWall = self.walls[nextx][nexty]
+            if not hitsWall:
+                nextCorners = list(state[1])
+                for i, corner in enumerate(self.corners):
+                    if nextPos == corner:
+                        nextCorners[i] = True
+
+                nextState = (nextPos, tuple(nextCorners))
+                stepCost = 1
+                successors.append((nextState, action, stepCost))
 
         self._expanded += 1 # DO NOT CHANGE
         return successors
@@ -342,6 +357,11 @@ class CornersProblem(search.SearchProblem):
             if self.walls[x][y]: return 999999
         return len(actions)
 
+def manhattanDistance(p1, p2):
+    return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
+
+def euclideanDistance(p1, p2):
+    return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
 
 def cornersHeuristic(state, problem):
     """
@@ -360,7 +380,15 @@ def cornersHeuristic(state, problem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-    return 0 # Default to trivial solution
+    cornerStates = state[1]
+    activeCorners = [corner for i, corner in enumerate(corners)
+        if not cornerStates[i]]
+
+    if activeCorners:
+        return max([manhattanDistance(state[0], corner) for corner
+            in activeCorners])
+    else: # goal
+        return 0
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
@@ -454,7 +482,24 @@ def foodHeuristic(state, problem):
     """
     position, foodGrid = state
     "*** YOUR CODE HERE ***"
-    return 0
+    foodList = foodGrid.asList()
+
+    # N^2 manhattan distances
+    if len(foodList) > 1:
+        manhattanDistances = [
+            min(manhattanDistance(position, f) + manhattanDistance(f, g),
+            manhattanDistance(position, g) + manhattanDistance(g, f))
+            for f in foodList for g in foodList if f != g]
+    else:
+        manhattanDistances = [manhattanDistance(position, f)
+            for f in foodList]
+
+    if manhattanDistances:
+        maxManhattanDistance = max(manhattanDistances)
+    else: # goal
+        maxManhattanDistance = 0
+
+    return maxManhattanDistance
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
