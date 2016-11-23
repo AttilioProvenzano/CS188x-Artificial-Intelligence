@@ -15,8 +15,11 @@
 from util import manhattanDistance
 from game import Directions
 import random, util
+import os, sys
 
 from game import Agent
+from searchAgents import PositionSearchProblem
+from searchAgents import SearchAgent
 
 class ReflexAgent(Agent):
     """
@@ -197,7 +200,8 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
         "*** YOUR CODE HERE ***"
         self.inf = 99999
-        bestAction, bestValue = self.alphabeta(gameState, 0, self.depth)
+        bestAction, bestValue = self.alphabeta(gameState, -self.inf, self.inf,
+            0, self.depth)
         # print "alphabeta depth {}, value {}".format(self.depth, bestValue)
 
         return bestAction
@@ -216,7 +220,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
 
         bestValue = -self.inf
         for action in gameState.getLegalActions(agent):
-            actionValue = self.minimax(
+            actionValue = self.alphabeta(
                 gameState.generateSuccessor(agent, action),
                 alpha, beta, nextAgent, depth)[1]
 
@@ -238,7 +242,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
 
         bestValue = self.inf
         for action in gameState.getLegalActions(agent):
-            actionValue = self.minimax(
+            actionValue = self.alphabeta(
                 gameState.generateSuccessor(agent, action),
                 alpha, beta, nextAgent, depth)[1]
 
@@ -266,7 +270,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         "*** YOUR CODE HERE ***"
         self.inf = 99999
         bestAction, bestValue = self.expectimax(gameState, 0, self.depth)
-        print "expectimax depth {}, value {}".format(self.depth, bestValue)
+        # print "expectimax depth {}, value {}".format(self.depth, bestValue)
 
         return bestAction
 
@@ -306,7 +310,66 @@ def betterEvaluationFunction(currentGameState):
       DESCRIPTION: <write something here so we know what you did>
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    scoreWeight = 1
+    foodCountWeight = -10
+    capsuleCountWeight = -30
+    minFoodDistanceWeight = -1
+    minGhostDistanceInvWeight = -10
+    minGhostDistanceInv2Weight = -50
+
+    evaluation = 0
+
+    pacmanPosition = currentGameState.getPacmanPosition()
+    foodList = currentGameState.getFood().asList()
+    capsuleList = currentGameState.getCapsules()
+
+    score = currentGameState.getScore()
+    evaluation += scoreWeight * score
+
+    foodCount = len(foodList)
+    evaluation += foodCountWeight * foodCount
+
+    capsuleCount = len(capsuleList)
+    evaluation += capsuleCountWeight * capsuleCount
+
+    if not foodList:
+        minFoodDistance = 0
+    else:
+        foodDistances = [manhattanDistance(food, pacmanPosition)
+            for food in foodList]
+        closestFoodIndex = foodDistances.index(min(foodDistances))
+        closestFood = foodList[closestFoodIndex]
+
+        sys.stdout = open(os.devnull, "w") # silence
+        prob = PositionSearchProblem(currentGameState, start=pacmanPosition,
+            goal=closestFood)
+        actions = SearchAgent(fn='aStarSearch', prob='PositionSearchProblem',
+            heuristic='manhattanHeuristic').searchFunction(prob)
+        sys.stdout = sys.__stdout__ # end silence
+
+        minFoodDistance = len(actions)
+    evaluation += minFoodDistanceWeight * minFoodDistance
+
+    minGhostDistance = 99999
+    for ghostState in currentGameState.getGhostStates():
+        ghostPosition = ghostState.configuration.getPosition()
+        ghostDistance = util.manhattanDistance(ghostPosition, pacmanPosition)
+        minGhostDistance = min(ghostDistance, minGhostDistance)
+        if minGhostDistance == ghostDistance:
+            minGhostScaredTimer = ghostState.scaredTimer
+
+    minGhostDistanceInv = 1.0/(minGhostDistance + 0.01)
+    minGhostDistanceInv2 = 1.0/((minGhostDistance ** 2) + 0.01)
+
+    if minGhostScaredTimer > minGhostDistance:
+        evaluation -= minGhostDistanceInvWeight * minGhostDistanceInv
+        evaluation -= minGhostDistanceInv2Weight * minGhostDistanceInv2
+    else:
+        evaluation += minGhostDistanceInvWeight * minGhostDistanceInv
+        evaluation += minGhostDistanceInv2Weight * minGhostDistanceInv2
+
+    return evaluation
+
 
 # Abbreviation
 better = betterEvaluationFunction
