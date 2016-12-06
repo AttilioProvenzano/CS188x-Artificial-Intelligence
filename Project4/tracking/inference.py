@@ -17,6 +17,7 @@ import util
 import random
 import busters
 import game
+from itertools import cycle
 
 class InferenceModule:
     """
@@ -260,7 +261,11 @@ class ParticleFilter(InferenceModule):
         Storing your particles as a Counter (where there could be an associated
         weight with each position) is incorrect and may produce errors.
         """
-        "*** YOUR CODE HERE ***"
+        self.particles = []
+        for legalPosition in cycle(self.legalPositions):
+            if len(self.particles) >= self.numParticles:
+                break
+            self.particles.append(legalPosition)
 
     def observe(self, observation, gameState):
         """
@@ -292,8 +297,29 @@ class ParticleFilter(InferenceModule):
         noisyDistance = observation
         emissionModel = busters.getObservationDistribution(noisyDistance)
         pacmanPosition = gameState.getPacmanPosition()
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+
+        if noisyDistance is None:
+            newParticles = []
+            for particle in self.particles:
+                newParticle = self.getJailPosition()
+                newParticles.append(newParticle)
+            self.particles = newParticles
+        else:
+            weightedParticles = util.Counter()
+            for particle in self.particles:
+                particleDistance = util.manhattanDistance(pacmanPosition,
+                    particle)
+                weight = emissionModel[particleDistance]
+                weightedParticles[particle] += weight
+
+            if weightedParticles.totalCount() == 0:
+                self.initializeUniformly(gameState)
+            else:
+                newParticles = []
+                for particle in self.particles:
+                    newParticle = util.sample(weightedParticles)
+                    newParticles.append(newParticle)
+                self.particles = newParticles
 
     def elapseTime(self, gameState):
         """
@@ -309,8 +335,13 @@ class ParticleFilter(InferenceModule):
         util.sample(Counter object) is a helper method to generate a sample from
         a belief distribution.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        newParticles = []
+        for particle in self.particles:
+            newPosDist = self.getPositionDistribution(self.setGhostPosition(
+                gameState, particle))
+            newParticle = util.sample(newPosDist)
+            newParticles.append(newParticle)
+        self.particles = newParticles
 
     def getBeliefDistribution(self):
         """
@@ -319,8 +350,11 @@ class ParticleFilter(InferenceModule):
         essentially converts a list of particles into a belief distribution (a
         Counter object)
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        beliefs = util.Counter()
+        for particle in self.particles:
+            beliefs[particle] += 1
+        beliefs.normalize()
+        return beliefs
 
 class MarginalInference(InferenceModule):
     """
