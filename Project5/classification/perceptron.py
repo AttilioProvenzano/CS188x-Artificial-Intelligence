@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -54,8 +54,14 @@ class PerceptronClassifier:
         for iteration in range(self.max_iterations):
             print "Starting iteration ", iteration, "..."
             for i in range(len(trainingData)):
-                "*** YOUR CODE HERE ***"
-                util.raiseNotDefined()
+                labelScores = [self.weights[label] * trainingData[i] for label
+                    in self.legalLabels]
+                predictedLabelIndex = labelScores.index(max(labelScores))
+                predictedLabel = self.legalLabels[predictedLabelIndex]
+
+                if predictedLabel != trainingLabels[i]:
+                    self.weights[predictedLabel] -= trainingData[i]
+                    self.weights[trainingLabels[i]] += trainingData[i]
 
     def classify(self, data ):
         """
@@ -77,9 +83,9 @@ class PerceptronClassifier:
         """
         Returns a list of the 100 features with the greatest weight for some label
         """
-        featuresWeights = []
+        w = self.weights[label]
 
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # Sort the features by their weight
+        featuresWeights = sorted(w, key=w.get, reverse=True)
 
-        return featuresWeights
+        return featuresWeights[0:100]
