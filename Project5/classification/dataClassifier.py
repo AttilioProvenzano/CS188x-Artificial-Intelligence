@@ -205,8 +205,43 @@ def enhancedPacmanFeatures(state, action):
     It should return a counter with { <feature name> : <feature value>, ... }
     """
     features = util.Counter()
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    successor = state.generateSuccessor(0, action)
+
+    features['score'] = successor.getScore()
+
+    foodDistances = [util.manhattanDistance(
+        successor.getPacmanPosition(), foodPosition)
+        for foodPosition in successor.getFood().asList()]
+
+    if foodDistances:
+        closestFoodDistance = min(foodDistances)
+        closestFoodIndex = foodDistances.index(closestFoodDistance)
+        closestFood = successor.getFood().asList()[closestFoodIndex]
+
+        features['closest food distance'] = closestFoodDistance
+
+    pelletDistances = [util.manhattanDistance(
+        successor.getPacmanPosition(), pelletPosition)
+        for pelletPosition in successor.getCapsules()]
+
+    features['pellet count'] = len(pelletDistances)
+
+    ghostDistances = [util.manhattanDistance(
+        successor.getPacmanPosition(), ghostPosition)
+        for ghostPosition in successor.getGhostPositions()]
+
+    features['closest ghost distance'] = min(ghostDistances)
+    features['closest ghost inv distance'] = 1 / (0.01 + min(ghostDistances))
+
+    closestGhostIndex = ghostDistances.index(min(ghostDistances))
+    closestGhostState = successor.getGhostState(closestGhostIndex + 1)
+    closestGhostScaredTimer = closestGhostState.scaredTimer
+
+    pelletState = (closestGhostScaredTimer > 0)
+    if pelletState:
+        features['ghosts scared'] = 1
+
     return features
 
 
