@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -15,6 +15,7 @@
 # This file contains feature extraction methods and harness
 # code for data classification
 
+import math
 import mostFrequent
 import naiveBayes
 import perceptron
@@ -77,8 +78,89 @@ def enhancedFeatureExtractorDigit(datum):
     """
     features =  basicFeatureExtractorDigit(datum)
 
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    featureList = [f for f in features.keys() if features[f] > 0]
+    # ImagePrinter(DIGIT_DATUM_WIDTH, DIGIT_DATUM_HEIGHT).printImage(featureList)
+
+    # # Add a bit of fuzziness through rotation
+    # for theta in [math.radians(a) for a in [-10, -5, 5, 10]]:
+    #     for x in range(DIGIT_DATUM_WIDTH):
+    #         for y in range(DIGIT_DATUM_HEIGHT):
+    #             if datum.getPixel(x, y) > 0:
+    #                 # 2D rotation
+    #                 rotatedX = int(math.cos(theta) * x - math.sin(theta) * y)
+    #                 rotatedY = int(math.sin(theta) * x + math.cos(theta) * y)
+    #                 if (rotatedX >= 0 and rotatedX < DIGIT_DATUM_WIDTH
+    #                 and rotatedY >= 0 and rotatedY < DIGIT_DATUM_HEIGHT):
+    #                     features[(rotatedX,rotatedY)] = 1
+
+    # Compute simply connected regions, in a search-like approach
+    whitespace = {(x, y) for x in range(DIGIT_DATUM_WIDTH)
+        for y in range(DIGIT_DATUM_HEIGHT)
+        if datum.getPixel(x, y) == 0}
+
+    ConnectedRegions = 0 # Connected regions with more than 2 pixels
+    connectedRegions3 = 0 # Connected regions with more than 3 pixels
+    connectedRegions5 = 0 # Connected regions with more than 5 pixels
+    while whitespace:
+        # ImagePrinter(DIGIT_DATUM_WIDTH, DIGIT_DATUM_HEIGHT).printImage(list(whitespace))
+
+        startingPoint = whitespace.pop() # Choose a random starting point
+        fringe = {startingPoint}
+        region = set()
+
+        while fringe:
+            point = fringe.pop()
+
+            x, y = point
+            # for newPoint in [(x-1, y), (x+1, y), (x, y-1), (x, y+1)]:
+            #    newX, newY = newPoint
+            for newPoint in [(newX, newY)
+                for newX in [x-1, x, x+1]
+                for newY in [y-1, y, y+1]]:
+                newX, newY = newPoint
+                if (newX >= 0 and newX < DIGIT_DATUM_WIDTH
+                and newY >= 0 and newY < DIGIT_DATUM_HEIGHT
+                and newPoint != point
+                and newPoint in whitespace):
+                    whitespace.remove(newPoint)
+                    fringe.add(newPoint)
+
+            region.add(point)
+
+        if len(region) > 0: # rule out very small regions (just noise)
+            ConnectedRegions += 1
+
+        if len(region) > 3: # rule out very small regions (just noise)
+            connectedRegions3 += 1
+
+        if len(region) > 5: # rule out very small regions (just noise)
+            connectedRegions5 += 1
+
+    if ConnectedRegions > 3:
+        ConnectedRegions = 3
+
+    if connectedRegions3 > 3:
+        connectedRegions3 = 3
+
+    if connectedRegions5 > 3:
+        connectedRegions5 = 3
+
+    for i in range(3):
+        if ConnectedRegions == i+1:
+            features['%d region(s)' % (i+1)] = 1
+        else:
+            features['%d region(s)' % (i+1)] = 0
+
+
+        if connectedRegions3 == i+1:
+            features['%d region(s) with threshold 3' % (i+1)] = 1
+        else:
+            features['%d region(s) with threshold 3' % (i+1)] = 0
+
+        if connectedRegions5 == i+1:
+            features['%d region(s) with threshold 5' % (i+1)] = 1
+        else:
+            features['%d region(s) with threshold 5' % (i+1)] = 0
 
     return features
 
@@ -163,9 +245,6 @@ def analysis(classifier, guesses, testLabels, testData, rawTestData, printImage)
     This code won't be evaluated. It is for your own optional use
     (and you can modify the signature if you want).
     """
-
-    # Put any code here...
-    # Example of use:
     # for i in range(len(guesses)):
     #     prediction = guesses[i]
     #     truth = testLabels[i]
@@ -175,7 +254,8 @@ def analysis(classifier, guesses, testLabels, testData, rawTestData, printImage)
     #         print "Predicted %d; truth is %d" % (prediction, truth)
     #         print "Image: "
     #         print rawTestData[i]
-    #         break
+    #         print
+    #         print
 
 
 ## =====================
@@ -364,7 +444,7 @@ def runClassifier(args, options):
     featureFunction = args['featureFunction']
     classifier = args['classifier']
     printImage = args['printImage']
-    
+
     # Load data
     numTraining = options.training
     numTest = options.test
